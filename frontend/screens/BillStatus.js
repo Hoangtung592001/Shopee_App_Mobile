@@ -1,145 +1,136 @@
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native'
-import React, {useState} from 'react'
-import Header from '../components/notiComponents/Header'
-import ListFilterItem from '../components/billStatusComponents/ListFilterItem'
-import RecommendItem from '../components/homeComponents/RecommendItem'
-import ItemStatus from '../components/billStatusComponents/ItemStatus'
-import SeparateView from '../components/userComponents/SeparateView'
-import { useNavigation } from '@react-navigation/native'
-import FilterItem from '../components/billStatusComponents/FilterItem'
-
-export default function BillStatus({route}) {
+import {
+    View,
+    Text,
+    SafeAreaView,
+    ScrollView,
+    TouchableOpacity,
+} from "react-native";
+import React, { useState } from "react";
+import Header from "../components/notiComponents/Header";
+import ListFilterItem from "../components/billStatusComponents/ListFilterItem";
+import RecommendItem from "../components/homeComponents/RecommendItem";
+import ItemStatus from "../components/billStatusComponents/ItemStatus";
+import SeparateView from "../components/userComponents/SeparateView";
+import { useNavigation } from "@react-navigation/native";
+import FilterItem from "../components/billStatusComponents/FilterItem";
+import { useDispatch, useSelector } from "react-redux";
+import { Alert } from "react-native";
+import { calcelOrder } from "../redux/actions/orderActions";
+export default function BillStatus({ route }) {
     const navigation = useNavigation();
-    const [listData, setListData] = useState([
-        {
-            id: 0,  
-            shopName: 'shop1',
-            uriImg: 'https://top10tphcm.com/wp-content/uploads/2019/08/ao-thun-tay-lo-co-gai-sexy.png',
-            productName: 'Áo thun chất lượng vjppro 123 123 123 123 123',
-            priceEach: 325000,
-            quantity: 1,
-            status: 'Đã huỷ',
-        },
-        {
-            id: 1,  
-            shopName: 'shop1',
-            uriImg: 'https://top10tphcm.com/wp-content/uploads/2019/08/ao-thun-tay-lo-co-gai-sexy.png',
-            productName: 'Áo thun chất lượng vjppro 123 123 123 123 123 ',
-            priceEach: 325000,
-            quantity: 1,
-            status: 'Đang giao',
-        },
-        {
-            id: 2,  
-            shopName: 'shop1',
-            uriImg: 'https://top10tphcm.com/wp-content/uploads/2019/08/ao-thun-tay-lo-co-gai-sexy.png',
-            productName: 'Áo thun chất lượng vjppro 123 123 123 123 123 ',
-            priceEach: 325000,
-            quantity: 1,
-            status: 'Chờ lấy hàng',
-        },
-        {
-            id: 3,  
-            shopName: 'shop1',
-            uriImg: 'https://top10tphcm.com/wp-content/uploads/2019/08/ao-thun-tay-lo-co-gai-sexy.png',
-            productName: 'Áo thun chất lượng vjppro 123 123 123 123 123 ',
-            priceEach: 325000,
-            quantity: 1,
-            status: 'Đã giao',
-        },
-        {
-            id: 4,  
-            shopName: 'shop1',
-            uriImg: 'https://top10tphcm.com/wp-content/uploads/2019/08/ao-thun-tay-lo-co-gai-sexy.png',
-            productName: 'Áo thun chất lượng vjppro 123 123 123 123 123 ',
-            priceEach: 325000,
-            quantity: 1,
-            status: 'Chờ lấy hàng',
-        },
-    ])
+    const orderedProducts = useSelector((state) => state.product.infoOrders);
+    const accessToken = useSelector((state) => state.user.token.refreshToken);
+    const dispatch = useDispatch();
+    const deletedOrders = orderedProducts.orders.deletedOrders;
+    const deliveredProducts = orderedProducts.orders.deliveredProducts;
+    const deliveringOrders = orderedProducts.orders.deliveringOrders;
+    const waitingForDeliveringProducts =
+        orderedProducts.orders.waitingForDeliveringProducts;
     const [listCategory, setListCategory] = useState([
         {
-            id: 0,
-            title: "Chờ lấy hàng",
-            active: route.params?.activePage == "Chờ lấy hàng" ? true : false,
-        },
-        {
             id: 1,
-            title: "Đang giao",
-            active: route.params?.activePage == "Đang giao" ? true : false,
+            title: "Chờ lấy hàng",
+            active: route.params?.activePage == 1 ? true : false,
         },
         {
             id: 2,
-            title: "Đã giao",
-            active: route.params?.activePage == "Đã giao" ? true : false,
+            title: "Đang giao",
+            active: route.params?.activePage == 2 ? true : false,
         },
         {
             id: 3,
-            title: "Đã huỷ",
-            active: route.params?.activePage == "Đã huỷ" ? true : false,
+            title: "Đã giao",
+            active: route.params?.activePage == 3 ? true : false,
         },
-        
-    ])
-  return (
-    <SafeAreaView style = {{height: '100%', backgroundColor: '#fff'}}>
-        <Header
-            title = {"Đơn mua"}
-            canBack = {true}
-        />
-       
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator= {false}
-            >
-                {
-                    listCategory.map((item, index) => 
+        {
+            id: 0,
+            title: "Đã huỷ",
+            active: route.params?.activePage == 0 ? true : false,
+        },
+    ]);
+    const [activePage, setActivePage] = useState(route.params.activePage);
+    let listProducts = waitingForDeliveringProducts;
+    if (activePage == 0) {
+        listProducts = deletedOrders;
+    } else if (activePage == 2) {
+        listProducts = deliveringOrders;
+    } else if (activePage == 3) {
+        listProducts = deliveredProducts;
+    }
+    return (
+        <SafeAreaView style={{ height: "100%", backgroundColor: "#fff" }}>
+            <Header title={"Đơn mua"} canBack={true} />
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {listCategory.map((item, index) => (
                     <TouchableOpacity
-                        key = {index}
-                        activeOpacity = {1}
-                        onPress = {() => {
-                            setListCategory(listCategory.map((subItem, subIndex) => {
-                                if (index == subIndex) {
-                                    return {...subItem, active: true}
-                                } else {
-                                    return {...subItem, active: false}
-                                }
-                            }))
+                        key={index}
+                        activeOpacity={1}
+                        onPress={() => {
+                            setActivePage(item.id);
+                            setListCategory(
+                                listCategory.map((subItem, subIndex) => {
+                                    if (subItem.id == item.id) {
+                                        return { ...subItem, active: true };
+                                    } else {
+                                        return { ...subItem, active: false };
+                                    }
+                                })
+                            );
                         }}
                     >
-                        <FilterItem 
-                            title = {item.title} 
-                            active = {item.active}
-                            pl = {20}
-                            pr = {21}
-                            />
+                        <FilterItem
+                            title={item.title}
+                            active={item.active}
+                            pl={20}
+                            pr={21}
+                        />
                     </TouchableOpacity>
-                    )
-                }
+                ))}
             </ScrollView>
-        <ScrollView>
-            <SeparateView/>
-            {
-                listData.map((item, index) => 
+            <ScrollView>
+                <SeparateView />
+                {listProducts.map((item, index) => (
                     <ItemStatus
-                        key = {item.id}
-                        shopName = {item.shopName}
-                        uriImg = {item.uriImg}
-                        productName = {item.productName}
-                        quantity = {item.quantity}
-                        priceEach = {item.priceEach}
-                        status = {item.status}
-                        handlePress = {() => {
-                            navigation.navigate("Review")
+                        key={index}
+                        shopName={item?.product?.shop?.shopName}
+                        uriImg={item?.product?.image}
+                        productName={item?.product?.productName}
+                        quantity={item?.quantityOrder}
+                        priceEach={item?.priceEach}
+                        status={activePage}
+                        handlePress={() => {
+                            navigation.navigate("Review", { item: item });
                         }}
-                        handleCancel = {() => {
-                            setListData(listData.filter((_, subIndex) => {
-                                return index != subIndex;
-                            }))
+                        handleCancel={() => {
+                            Alert.alert(
+                                "Cảnh báo",
+                                "Bạn có chắc chắn muốn hủy đơn hàng này không ?",
+                                [
+                                    {
+                                        text: "Cancel",
+                                        onPress: () =>
+                                            console.log("Cancel Pressed"),
+                                        style: "cancel",
+                                    },
+                                    {
+                                        text: "OK",
+                                        onPress: () => {
+                                            dispatch(
+                                                calcelOrder(
+                                                    accessToken,
+                                                    item.orderId
+                                                )
+                                            );
+                                            navigation.navigate("Home");
+                                        },
+                                    },
+                                ]
+                            );
                         }}
                     />
-                )
-            }
-        </ScrollView>
-    </SafeAreaView>
-  )
+                ))}
+            </ScrollView>
+        </SafeAreaView>
+    );
 }

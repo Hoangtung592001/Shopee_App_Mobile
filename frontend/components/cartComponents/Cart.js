@@ -1,142 +1,106 @@
-import { View, Text, FlatList, SafeAreaView, ScrollView } from 'react-native'
-import React, { useState } from 'react'
-import CartItem from './CartItem'
-import { useNavigation } from '@react-navigation/native'
-import Header from '../notiComponents/Header'
-import CartBill from './CartBill'
-
-function calculateSum(orders) {
-    var sum = 0;
-    orders.map(item => {
-        sum += item.price
-    })
-    return sum;
-}
+import { View, Text, FlatList, SafeAreaView, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import CartItem from "./CartItem";
+import Header from "../notiComponents/Header";
+import CartBill from "./CartBill";
+import { useSelector, useDispatch } from "react-redux";
+import { getAllProductsInCart } from "../../redux/actions/orderCartActions";
+import { login } from "../../redux/actions/userActions";
+import { changeQuantityProductInCart } from "../../redux/actions/orderCartActions";
+import { useNavigation } from "@react-navigation/native";
+const filterProductForOrder = (products) => {
+    const orders = {};
+    products.forEach((product) => {
+        if (orders[product.userShop.id.toString()]) {
+            orders[product.userShop.id.toString()].push({
+                productCode: product.id,
+                quantity: product.orderCart.quantityOrder,
+            });
+        } else {
+            orders[product.userShop.id.toString()] = [];
+            orders[product.userShop.id.toString()].push({
+                productCode: product.id,
+                quantity: product.orderCart.quantityOrder,
+            });
+        }
+    });
+    return orders;
+};
 
 export default function Cart() {
     const navigation = useNavigation();
-    const [orders, setOrders] = useState([
-        {
-            id: 1,
-            sourceIcon: require('../../assets/icon/ao123.png'),
-            description: 'áo vjp pro 123 png 123 fasd sdcd ăer',
-            shopName: 'shop1',
-            price: 19000,
-            quantity: 1
-        },
-        {
-            id: 2,
-            sourceIcon: require('../../assets/icon/ao123.png'),
-            description: 'áo vjp pro 123 png 123 fasd sdcd ăer',
-            shopName: 'shop2',
-            price: 19000,
-            quantity: 1
-        },
-        {
-            id: 3,
-            sourceIcon: require('../../assets/icon/ao123.png'),
-            description: 'áo vjp pro 123 png 123 fasd sdcd ăer',
-            shopName: 'shop3',
-            price: 19000,
-            quantity: 1
-        },
-        {
-            id: 4,
-            sourceIcon: require('../../assets/icon/ao123.png'),
-            description: 'áo vjp pro 123 png 123 fasd sdcd ăer',
-            shopName: 'shop4',
-            price: 19000,
-            quantity: 1
-        },
-        {
-            id: 5,
-            sourceIcon: require('../../assets/icon/ao123.png'),
-            description: 'áo vjp pro 123 png 123 fasd sdcd ăer',
-            shopName: 'shop5',
-            price: 19000,
-            quantity: 1
-        },
-        {
-            id: 6,
-            sourceIcon: require('../../assets/icon/ao123.png'),
-            description: 'áo vjp pro 123 png 123 fasd sdcd ăer',
-            shopName: 'shop6',
-            price: 19000,
-            quantity: 1
-        },
-    
-    ])
-    const [totalValue, setTotalValue] = useState(calculateSum(orders))
-  return (
-      <SafeAreaView>
-          <View>
-            <FlatList
-                data = {orders}
-                renderItem = {({item, index}) => 
-                <CartItem
-                    sourceIcon = {item.sourceIcon}
-                    description = {item.description}
-                    shopName = {item.shopName}
-                    price = {item.price}
-                    key = {index}
-                    quantity = {item.quantity}
-                    handleClickMinus = {() => {
-                        var newQuantity = orders[index].quantity - 1;
-                        var newOrders = []
-                        if (newQuantity >= 1) {
-                            newOrders = orders.map((subItem, subIndex) => {
-                                if (subIndex == index) {
-                                    return {...subItem, quantity: newQuantity}
-                                } else {
-                                    return {...subItem}
-                                }
-                            })
-                    
-                        } else {
-                            newOrders = orders.filter((subItem, subIndex) => {
-                                return index != subIndex;
-                            }) 
-                            // setTotalValue(newOrders.reduce((pre, cur) => {
-                            //     return Number(pre) + Number(cur.price) * Number(cur.quantity)
-                            // }), 0)
-                        }
-                        setOrders(newOrders);
-                        setTotalValue(calculateSum(newOrders))
-                    }}
-                    handleClickPlus = {() => {
-                        var newQuantity = orders[index].quantity + 1;
-                        setOrders(
-                            orders.map((subItem, subIndex) => {
-                                if (subIndex == index) {
-                                    return {...subItem, quantity: newQuantity}
-                                } else {
-                                    return {...subItem}
-                                }
-                            })
-                        )
-                        setTotalValue( orders.map((subItem, subIndex) => {
-                            if (subIndex == index) {
-                                return {...subItem, quantity: newQuantity}
-                            } else {
-                                return {...subItem}
-                            }
-                        }).reduce((pre, cur) => {
-                            return Number(pre) + cur.price * cur.quantity
-                        }, 0))
-                    }}
-                />}
-                keyExtractor = {item => item.id}
-                ListHeaderComponent = {<Header title = "Giỏ hàng" canBack = {true}/>}
-                stickyHeaderIndices = {[0]}
-                ListFooterComponent = {<View style = {{height: 30}}></View>}
-            />
-          </View>
-          <CartBill 
-            totalValue = {totalValue}
-            handleClickBuy = {() => {
-                navigation.navigate('ConfirmBuy', {totalPrice: totalValue});
-            }}
-        />
-      </SafeAreaView>
-  )
+    const accessToken = useSelector((state) => state.user.token.refreshToken);
+    if (!accessToken) {
+        navigation.navigate("LogIn");
+    }
+    const dispatch = useDispatch();
+    const user = useSelector((state) => state.user);
+    const orderCart = useSelector((state) => state.orderCart.ordersCart.data);
+    let totalValue = 0;
+    orderCart.forEach((product) => {
+        totalValue += product.priceEach * product.orderCart.quantityOrder;
+    });
+    const order = {
+        address: "368 Đông côi - Thị Trấn Hồ - Thuận Thành - Bắc ninh",
+        data: filterProductForOrder(orderCart),
+    };
+    useEffect(() => {
+        dispatch(getAllProductsInCart(user.token.refreshToken));
+    }, []);
+    return (
+        <SafeAreaView>
+            <View>
+                <FlatList
+                    data={orderCart}
+                    renderItem={({ item, index }) => (
+                        <CartItem
+                            sourceIcon={item.image}
+                            description={item.productName}
+                            shopName={item.userShop.shopName}
+                            price={item.priceEach}
+                            key={item.id}
+                            quantity={item.orderCart.quantityOrder}
+                            handleClickMinus={() => {
+                                const props = {
+                                    productCode: orderCart[index].id,
+                                    quantity:
+                                        orderCart[index].orderCart
+                                            .quantityOrder - 1,
+                                };
+                                dispatch(
+                                    changeQuantityProductInCart(
+                                        accessToken,
+                                        orderCart,
+                                        props
+                                    )
+                                );
+                            }}
+                            handleClickPlus={() => {
+                                const props = {
+                                    productCode: orderCart[index].id,
+                                    quantity:
+                                        orderCart[index].orderCart
+                                            .quantityOrder + 1,
+                                };
+                                dispatch(
+                                    changeQuantityProductInCart(
+                                        accessToken,
+                                        orderCart,
+                                        props
+                                    )
+                                );
+                            }}
+                        />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    ListHeaderComponent={
+                        <Header title="Giỏ hàng" canBack={true} />
+                    }
+                    stickyHeaderIndices={[0]}
+                    ListFooterComponent={<View style={{ height: 100 }}></View>}
+                />
+            </View>
+            <CartBill order={order} totalValue={totalValue} summit={false} />
+        </SafeAreaView>
+    );
 }
